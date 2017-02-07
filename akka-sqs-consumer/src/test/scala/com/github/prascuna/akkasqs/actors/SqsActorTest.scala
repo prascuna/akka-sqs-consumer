@@ -1,6 +1,7 @@
 package com.github.prascuna.akkasqs.actors
 
 import java.net.URL
+import java.util.concurrent.{Future => JFuture}
 
 import akka.actor.{ActorRef, ActorRefFactory, ActorSystem}
 import akka.testkit.{ImplicitSender, TestKit, TestProbe}
@@ -37,6 +38,7 @@ class SqsActorTest extends TestKit(ActorSystem("testSystem")) with ImplicitSende
         .thenAnswer((invocation: InvocationOnMock) => {
           val callback = invocation.getArgument[AsyncCallback](1)
           callback.onSuccess(mock[ReceiveMessageRequest], receiveMessageResult)
+          mock[JFuture[ReceiveMessageResult]]
         })
       it("should send back the retrieved messages") {
         sqsActor ! SqsReceive
@@ -50,8 +52,9 @@ class SqsActorTest extends TestKit(ActorSystem("testSystem")) with ImplicitSende
       type AsyncCallback = AsyncHandler[DeleteMessageRequest, DeleteMessageResult]
       when(sqsClient.deleteMessageAsync(ArgumentMatchers.eq(settings.queueUrl.toString), ArgumentMatchers.eq(message1.getReceiptHandle), any[AsyncCallback]))
         .thenAnswer((invocation: InvocationOnMock) => {
-          val callback = invocation.getArgument[AsyncCallback](1)
+          val callback = invocation.getArgument[AsyncCallback](2)
           callback.onSuccess(mock[DeleteMessageRequest], mock[DeleteMessageResult])
+          mock[JFuture[DeleteMessageResult]]
         })
       it("should send a delete message to SQS") {
         sqsActor ! SqsDelete(message1)
@@ -68,6 +71,7 @@ class SqsActorTest extends TestKit(ActorSystem("testSystem")) with ImplicitSende
         .thenAnswer((invocation: InvocationOnMock) => {
           val callback = invocation.getArgument[AsyncCallback](2)
           callback.onSuccess(mock[SendMessageRequest], new SendMessageResult().withMessageId("messageId"))
+          mock[JFuture[SendMessageResult]]
         })
       val sqsActor = createSqsActor(settings, sqsClient, 3)
       it("should send the message to SQS and should reply to the sender with SqsSent(messageId)") {
