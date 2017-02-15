@@ -6,11 +6,15 @@ version := "1.0"
 lazy val commonSettings = Seq(
   organization := "akka-sqs-consumer",
   scalaVersion := "2.12.1",
-  crossScalaVersions := Seq("2.12.1", "2.11.8")
+  crossScalaVersions := Seq("2.12.1", "2.11.8"),
+  libraryDependencies := Seq(
+    "org.scalatest" %% "scalatest" % "3.0.1" % "test",
+    "org.mockito" % "mockito-core" % "2.7.1" % "test"
+  )
 )
 
 
-lazy val core = (project in file("akka-sqs-consumer"))
+lazy val akkaSqsConsumer = (project in file("akka-sqs-consumer"))
   .settings(commonSettings: _*)
   .settings {
     name := "akka-sqs-consumer"
@@ -22,15 +26,13 @@ lazy val core = (project in file("akka-sqs-consumer"))
         "com.amazonaws" % "aws-java-sdk-core" % awsJavaSdkVersion,
         "com.typesafe.akka" %% "akka-actor" % akkaVersion,
         "com.typesafe.akka" %% "akka-slf4j" % akkaVersion,
-        "com.typesafe.akka" %% "akka-testkit" % akkaVersion % "test",
-        "org.scalatest" %% "scalatest" % "3.0.1" % "test",
-        "org.mockito" % "mockito-core" % "2.7.1" % "test"
+        "com.typesafe.akka" %% "akka-testkit" % akkaVersion % "test"
       )
     }
   }
 
-lazy val idempotentRedis = (project in file("akka-sqs-redis"))
-  .dependsOn(core)
+lazy val akkaSqsRedis = (project in file("akka-sqs-redis"))
+  .dependsOn(akkaSqsConsumer)
   .settings(commonSettings: _*)
   .settings {
     name := "akka-sqs-redis"
@@ -40,7 +42,7 @@ lazy val idempotentRedis = (project in file("akka-sqs-redis"))
   }
 
 lazy val root = (project in file("."))
-  .aggregate(core, idempotentRedis)
+  .aggregate(akkaSqsConsumer, akkaSqsRedis)
   .settings(commonSettings: _*)
   .settings {
     publishArtifact := false
