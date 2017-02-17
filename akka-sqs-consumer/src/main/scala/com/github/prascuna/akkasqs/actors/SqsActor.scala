@@ -1,16 +1,16 @@
 package com.github.prascuna.akkasqs.actors
 
 
-import akka.actor.{Actor, ActorLogging, ActorRef, ActorRefFactory, Props}
+import akka.actor.{Actor, ActorLogging, ActorRef, ActorRefFactory, ActorSystem, Props}
 import com.amazonaws.handlers.AsyncHandler
-import com.amazonaws.services.sqs.AmazonSQSAsyncClient
+import com.amazonaws.services.sqs.AmazonSQSAsync
 import com.amazonaws.services.sqs.model._
 import com.github.prascuna.akkasqs.settings.SqsSettings
 
 import scala.collection.JavaConverters._
 import scala.concurrent.ExecutionContext
 
-class SqsActor(sqsClient: AmazonSQSAsyncClient,
+class SqsActor(sqsClient: AmazonSQSAsync,
                settings: SqsSettings,
                consumerFactory: (ActorRefFactory) => ActorRef
               )
@@ -27,6 +27,7 @@ class SqsActor(sqsClient: AmazonSQSAsyncClient,
 
   override def receive: Receive = {
     case SqsReceive =>
+      val s = sender()
       log.debug("Receiving messages")
       sqsClient.receiveMessageAsync(request, new AsyncHandler[ReceiveMessageRequest, ReceiveMessageResult] {
         override def onError(exception: Exception): Unit =
@@ -34,7 +35,7 @@ class SqsActor(sqsClient: AmazonSQSAsyncClient,
 
         override def onSuccess(request: ReceiveMessageRequest, result: ReceiveMessageResult): Unit =
           result.getMessages.asScala.foreach { msg =>
-            sender() ! SqsMessage(msg)
+            s ! SqsMessage(msg)
           }
       })
 
@@ -49,12 +50,13 @@ class SqsActor(sqsClient: AmazonSQSAsyncClient,
       })
 
     case SqsSend(messageBody) =>
+      val s = sender()
       sqsClient.sendMessageAsync(queueUrl, messageBody, new AsyncHandler[SendMessageRequest, SendMessageResult] {
         override def onError(exception: Exception): Unit =
           log.error(exception, "Error sending Message")
 
         override def onSuccess(request: SendMessageRequest, result: SendMessageResult): Unit = {
-          sender() ! SqsSent(result.getMessageId)
+          s ! SqsSent(result.getMessageId)
           log.debug(s"Message [${result.getMessageId}] Sent")
         }
       })
@@ -66,13 +68,13 @@ object SqsActor {
 
   val name = "sqs-actor"
 
-  def factory(sqsClient: AmazonSQSAsyncClient,
-              settings: SqsSettings,
-              idempotentConsumerFactory: (ActorRefFactory) => ActorRef,
-              name: String = name
-             )
-             (implicit ex: ExecutionContext): (ActorRefFactory) => ActorRef =
-    _.actorOf(Props(new SqsActor(sqsClient, settings, idempotentConsumerFactory)), name)
+  def apply(sqsClient: AmazonSQSAsync,
+            settings: SqsSettings,
+            idempotentConsumerFactory: (ActorRefFactory) => ActorRef,
+            name: String = name
+           )
+           (implicit ec: ExecutionContext, system: ActorSystem): ActorRef =
+    system.actorOf(Props(new SqsActor(sqsClient, settings, idempotentConsumerFactory)), name)
 
   case object SqsReceive
 
@@ -87,4 +89,3 @@ object SqsActor {
   case class SqsAck(message: Message)
 
 }
-

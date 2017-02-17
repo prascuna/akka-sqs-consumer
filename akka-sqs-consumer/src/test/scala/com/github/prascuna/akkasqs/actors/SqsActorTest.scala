@@ -88,14 +88,14 @@ class SqsActorTest extends TestKit(ActorSystem("testSystem")) with ImplicitSende
     val probe = TestProbe()
     val factory: (ActorRefFactory => ActorRef) = _ => probe.ref
 
-    val sqsActorFactory = SqsActor.factory(sqsClient, settings, factory, SqsActor.name + "-" + actorNumber)
-    sqsActorFactory(system)
+    SqsActor(sqsClient, settings, factory, SqsActor.name + "-" + actorNumber)
   }
 }
 
 trait SqsActorFixtures {
   val settings = SqsSettings(
     queueUrl = new URL("http://test"),
+    region = "region1",
     maxMessages = 10,
     fetchingInterval = 10 seconds,
     writeTimeout = 20 seconds

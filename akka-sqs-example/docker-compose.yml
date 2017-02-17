@@ -1,0 +1,23 @@
+version: '2'
+services:
+  redis:
+    image: redis
+    ports:
+      - "6379:6379"
+  sqs:
+    image: feathj/fake-sqs
+    ports:
+      - "9494:9494"
+#    networks:
+#      app_net:
+#        ipv4_address: 172.16.238.14
+#    environment:
+#      VIRTUAL_HOST: "sqs"
+#networks:
+#  app_net:
+#    driver: bridge
+#    ipam:
+#      driver: default
+#      config:
+#      - subnet: 172.16.238.0/24
+#        gateway: 172.16.238.1

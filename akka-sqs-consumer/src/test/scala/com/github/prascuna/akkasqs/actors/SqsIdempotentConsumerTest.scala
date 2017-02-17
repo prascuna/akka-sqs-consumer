@@ -152,7 +152,7 @@ class SqsIdempotentConsumerTest extends TestKit(ActorSystem("testSystem")) with 
   def createActorWithTestActorRef(messageService: MessageService, actorNumber: Int): (ActorRef, TestProbe, TestProbe) = {
     val sqsConsumerProbe = TestProbe()
     val parentProbe = TestProbe()
-    val actor = TestActorRef(SqsIdempotentConsumer.probe(messageService, _ => sqsConsumerProbe.ref), parentProbe.ref, SqsIdempotentConsumer.name + "-" + actorNumber)
+    val actor = TestActorRef(SqsIdempotentConsumer.props(messageService, _ => sqsConsumerProbe.ref), parentProbe.ref, SqsIdempotentConsumer.name + "-" + actorNumber)
 
     (actor, sqsConsumerProbe, parentProbe)
   }

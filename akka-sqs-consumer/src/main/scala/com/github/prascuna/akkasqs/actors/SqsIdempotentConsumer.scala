@@ -58,9 +58,9 @@ object SqsIdempotentConsumer {
               sqsConsumerFactory: (ActorRefFactory) => ActorRef,
               name: String = name
              )(implicit ec: ExecutionContext): (ActorRefFactory) => ActorRef =
-    _.actorOf(probe(messageService, sqsConsumerFactory), name)
+    _.actorOf(props(messageService, sqsConsumerFactory), name)
 
-  def probe(messageService: MessageService,
+  def props(messageService: MessageService,
             sqsConsumerFactory: (ActorRefFactory) => ActorRef)
            (implicit ec: ExecutionContext): Props = {
     Props(new SqsIdempotentConsumer(messageService, sqsConsumerFactory))
